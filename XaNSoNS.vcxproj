@@ -285,6 +285,7 @@
     </CudaLink>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="block.cpp" />
     <ClCompile Include="CalcFunctions.cpp" />
     <ClCompile Include="CalcFunctionsOCL.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_MPI_OMP|x64'">true</ExcludedFromBuild>
@@ -293,14 +294,19 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_CUDA|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_OMP|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="config.cpp" />
     <ClCompile Include="IO.cpp" />
     <ClCompile Include="ReadXML.cpp" />
     <ClCompile Include="tinyxml2.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="block.h" />
+    <ClInclude Include="config.h" />
+    <ClInclude Include="ReadXML_utils.h" />
     <ClInclude Include="typedefs.h" />
     <ClInclude Include="tinyxml2.h" />
+    <ClInclude Include="vect3d.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="CalcFunctionsCUDA.cu">

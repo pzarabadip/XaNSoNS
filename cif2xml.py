@@ -31,9 +31,14 @@ def isstring(s):
 def str2list(X):
     Xnew=[]
     for x in X:
-        Xnew.append(float(x.replace('(','').replace(')','')))
+        Xnew.append(str2float(x))
     return Xnew
 def str2float(x):
+    point_pos = x.find('.')
+    if point_pos < 0:
+        return float(x.replace('(','.').replace(')',''))
+    if point_pos == 0:
+        return float(x.replace('.','0.').replace('(','').replace(')',''))
     return float(x.replace('(','').replace(')',''))
 def CheckFilename(filename):
     if not len(filename):
@@ -67,6 +72,7 @@ def cif2xml(XML,backup='.back'):
             ids=[]
             occ=[]
             Uiso=[]
+            DPtype=[]
             if not cb.has_key('_atom_site_fract_x'):
                 continue
             if cb.has_key('_atom_site_type_symbol'):
@@ -89,17 +95,28 @@ def cif2xml(XML,backup='.back'):
                 occ=str2list(occ)
             else:
                 occ=[1.0 for id in ids]
+            adp_Uiso = True
             if Block.Atoms.disp:
+                if cb.has_key('_atom_site_thermal_displace_type'):
+                    DPtype=cb['_atom_site_thermal_displace_type']
+                elif cb.has_key('_atom_site_adp_type'):
+                    DPtype=cb['_atom_site_adp_type']
                 if cb.has_key('_atom_site_U_iso_or_equiv'):
                     Uiso=cb['_atom_site_U_iso_or_equiv']
                 elif cb.has_key('_atom_site_U_equiv_geom_mean'):
                     Uiso=cb['_atom_site_U_equiv_geom_mean']
                 elif cb.has_key('_atom_site_B_iso_or_equiv'):
+                    adp_Uiso = False
                     Uiso=["%g"%(float(b)/(8*np.pi**2)) for b in cb['_atom_site_B_iso_or_equiv']]
                 elif cb.has_key('_atom_site_B_equiv_geom_mean'):
+                    adp_Uiso = False
                     Uiso=["%g"%(float(b)/(8*np.pi**2)) for b in cb['_atom_site_B_equiv_geom_mean']]
             if len(Uiso):
                 Uiso=str2list(Uiso)
+                if adp_Uiso:
+                    for iu, dpt in enumerate(DPtype):
+                        if dpt == 'Biso' or dpt == 'Bani' or dpt == 'Bovl':
+                            Uiso[iu] /= 8 * np.pi**2
             else:
                 Uiso=[0. for id in ids]
             a=str2float(cb['_cell_length_a'])
@@ -114,6 +131,11 @@ def cif2xml(XML,backup='.back'):
             h4 = c * np.cos(beta)
             h5 = ((h2 - h4)**2 + h3**2 + c**2 - h4**2 - bc2)/(2 * h3)
             h6 = np.sqrt(c**2 - h4**2 - h5**2)
+            h2 = 0 if abs(h2) < 1.e-9 else h2
+            h3 = 0 if abs(h3) < 1.e-9 else h3
+            h4 = 0 if abs(h4) < 1.e-9 else h4
+            h5 = 0 if abs(h5) < 1.e-9 else h5
+            h6 = 0 if abs(h6) < 1.e-9 else h6
             Block.CellVectors.a=np.array([a, 0., 0.])
             Block.CellVectors.b=np.array([h2, h3, 0.])
             Block.CellVectors.c=np.array([h4, h5, h6])
@@ -128,7 +150,7 @@ def cif2xml(XML,backup='.back'):
                 for symm in symmlist:
                     r=[0,0,0]
                     R=[[0,0,0],[0,0,0],[0,0,0]]
-                    symm=symm.split(',')
+                    symm=symm.lower().split(',')
                     for k in range(len(symm)):
                         symm[k]=symm[k].replace(' ','')
                         for j in range(len(ax)):

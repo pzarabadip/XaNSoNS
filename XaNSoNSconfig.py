@@ -22,6 +22,7 @@ import inspect
 import numpy as np
 from xml.dom import minidom
 import codecs
+import os
 def string2bool(string):
     strl=string.lower()
     if strl == 'yes' or strl == 'true' or strl == '1':
@@ -128,7 +129,6 @@ class PDFParam(XMLparamBase):
         self.__name__="PDF"
         self.type="PDF"
         self.q=0.
-        self.density=0.
         self.PrintPartial=False
     def ToXML(self,doc,PrintDefaults=False):
         PDFEl=doc.createElement("PDF")
@@ -153,6 +153,36 @@ class PDFParam(XMLparamBase):
         if not createPDF:
             return -1
         return PDFEl
+class SampleParam(XMLparamBase):
+    def __init__(self):
+        self.__name__="Sample"
+        self.density=0
+        self.Rcutoff=0.
+        self.Rsphere=0.
+        self.damping=False
+    def ToXML(self,doc,PrintDefaults=False):
+        SampleEl=doc.createElement("Sample")
+        defaultSample=SampleParam()
+        createSample=False
+        if  defaultSample.Rcutoff!=self.Rcutoff or PrintDefaults:
+            SampleEl.setAttributeNode(doc.createAttribute("Rcutoff"))
+            SampleEl.setAttribute("Rcutoff","%g"%self.Rcutoff)
+            createSample=True
+        if  defaultSample.Rsphere!=self.Rsphere or PrintDefaults:
+            SampleEl.setAttributeNode(doc.createAttribute("Rsphere"))
+            SampleEl.setAttribute("Rsphere","%g"%self.Rsphere)
+            createSample=True
+        if  defaultSample.damping!=self.damping or PrintDefaults:
+            SampleEl.setAttributeNode(doc.createAttribute("damping"))
+            SampleEl.setAttribute("damping",bool2string(self.damping))
+            createSample=True
+        if  defaultSample.density!=self.density or PrintDefaults:
+            SampleEl.setAttributeNode(doc.createAttribute("density"))
+            SampleEl.setAttribute("density","%g"%self.density)
+            createSample=True
+        if not createSample:
+            return -1
+        return SampleEl 
 class CalculationParam(XMLparamBase):
     def __init__(self):
         self.__name__="Calculation"
@@ -168,6 +198,7 @@ class CalculationParam(XMLparamBase):
         self.PartialIntensity=False
         self.hist_bin=0.001
         self.PDF=PDFParam()
+        self.Sample=SampleParam()
     def ToXML(self,doc,PrintDefaults=False):
         defaultCalc=CalculationParam()
         CalcEl=doc.createElement("Calculation")
@@ -229,6 +260,10 @@ class CalculationParam(XMLparamBase):
             if  defaultCalc.hist_bin!=self.hist_bin or PrintDefaults:
                 CalcEl.setAttributeNode(doc.createAttribute("hist_bin"))
                 CalcEl.setAttribute("hist_bin","%g"%self.hist_bin)
+        if self.scenario.lower()!="2d":
+            SampleEl=self.Sample.ToXML(doc,PrintDefaults)
+            if SampleEl!=-1:
+                CalcEl.appendChild(SampleEl)
         if self.scenario.lower()=="pdfonly" or self.scenario.lower()=="debyepdf":
             PDFEl=self.PDF.ToXML(doc,PrintDefaults)
             if PDFEl!=-1:
@@ -480,6 +515,9 @@ class XaNSoNSconfig(XMLparamBase):
         for i in range(len(self.Block)):
             self.Block[i].Show("%d:"%i)
     def FromXML(self,XMLfile):
+        if not os.path.isfile(XMLfile):
+            print('Error: file %s does not exist'%XMLfile)
+            return
         doc = minidom.parse(XMLfile)
         self.GetFromXMLelement(doc.firstChild)
     def ToXML(self,XMLfile,PrintDefaults=False):

@@ -96,7 +96,12 @@ def formfactors(XML,backup='.back'):
             f.write('%s '%name)
             elname=name[0].upper()+name.rstrip('0').lower()[1:]
             try:
-                ff=pt.elements.isotope(elname).xray.f0(q)
+                if elname == 'H1+' or elname == 'H+1' or elname == 'D+1' or elname == 'D1+':
+                    ff = np.zeros(q.size)
+                else:
+                    if '+' not in elname and '-' not in elname and len(elname) > 2:
+                        elname = elname[:2].rstrip('.')
+                    ff = pt.elements.isotope(elname).xray.f0(q)
             except:
                 try:
                     pt_sign=max(elname.find('+'),elname.find('-'))
@@ -114,8 +119,13 @@ def formfactors(XML,backup='.back'):
                 f.write('%s %e\n\n'%(name,ff))
         elif config.Calculation.source.lower()=='neutron':
             try:
-                elname=name[0].upper()+name.rstrip('0123456789+-').lower()[1:]
-                f.write('%s %e\n\n'%(name,pt.elements.isotope(elname).neutron.b_c))
+                elname=name[0].upper()+name.rstrip('.0123456789+-').lower()[1:]
+                if len(elname) > 2:
+                    elname = elname[:2].rstrip('.-')
+                if elname == 'Sm':
+                    f.write('%s %e\n\n'%(name, 0.8))
+                else:
+                    f.write('%s %e\n\n'%(name, pt.elements.isotope(elname).neutron.b_c))
             except:
                 print('Error: %s is not found in database'%name)
                 f.close()
